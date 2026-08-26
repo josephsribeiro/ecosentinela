@@ -752,8 +752,8 @@ def main() -> None:
     sidebar()
 
     st.title("EcoSentinela")
-    st.caption('O "Waze do meio ambiente": a comunidade reporta e valida problemas ambientais '
-               "locais — com ponte direta para a Secretaria de Meio Ambiente agir sobre eles.")
+    st.caption('O "Sentinela ambiental da população": Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar '
+               "problemas ambientais locais — que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
 
     pagina = st.session_state.pagina
