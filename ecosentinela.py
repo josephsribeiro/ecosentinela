@@ -12,17 +12,22 @@ Como rodar:
 
 from __future__ import annotations
 
+import io
 import json
 import random
 import uuid
 from datetime import datetime, timedelta
 
+import cloudinary
+import cloudinary.uploader
 import folium
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from folium.plugins import HeatMap
+from PIL import Image, ImageDraw, ImageFont
 from streamlit_folium import st_folium
+from streamlit_geolocation import streamlit_geolocation
 
 # =============================================================================
 # CONFIGURAÇÃO GERAL DA PÁGINA
@@ -34,6 +39,30 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# -----------------------------------------------------------------------------
+# CLOUDINARY — armazenamento persistente das fotos anexadas aos reports.
+# Credenciais lidas de st.secrets (defina em .streamlit/secrets.toml local, ou
+# em "Manage app → Settings → Secrets" no Streamlit Cloud):
+#
+#   CLOUDINARY_CLOUD_NAME = "seu_cloud_name"
+#   CLOUDINARY_API_KEY    = "sua_api_key"
+#   CLOUDINARY_API_SECRET = "seu_api_secret"
+#
+# Sem essas chaves configuradas, o app continua funcionando normalmente —
+# apenas o upload de foto fica desabilitado (aviso no lugar do formulário).
+# -----------------------------------------------------------------------------
+CLOUDINARY_ATIVO = False
+try:
+    cloudinary.config(
+        cloud_name=st.secrets["CLOUDINARY_CLOUD_NAME"],
+        api_key=st.secrets["CLOUDINARY_API_KEY"],
+        api_secret=st.secrets["CLOUDINARY_API_SECRET"],
+        secure=True,
+    )
+    CLOUDINARY_ATIVO = True
+except Exception:
+    CLOUDINARY_ATIVO = False
 
 # Cidade-base do protótipo (pode ser trocada por qualquer município)
 CIDADE_NOME = "Santarém, PA"
@@ -254,6 +283,53 @@ def talvez_gerar_protocolo(report: dict) -> None:
 
 
 # =============================================================================
+# FOTO — carimbo de geolocalização/timestamp + upload persistente (Cloudinary)
+# =============================================================================
+
+def carimbar_foto(foto_bytes: bytes, lat: float, lon: float, quando: datetime) -> bytes:
+    """Queima lat/lon + timestamp como texto sobre a imagem, evitando reuso de
+    foto antiga (mesma ideia do "carimbo" descrito no material da disciplina)."""
+    img = Image.open(io.BytesIO(foto_bytes)).convert("RGB")
+    w, h = img.size
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    linha1 = f"📍 {lat:.5f}, {lon:.5f}"
+    linha2 = quando.strftime("%d/%m/%Y %H:%M:%S")
+    try:
+        fonte = ImageFont.truetype("DejaVuSans-Bold.ttf", size=max(14, w // 32))
+    except Exception:
+        fonte = ImageFont.load_default()
+
+    faixa_altura = max(46, h // 9)
+    draw.rectangle([(0, h - faixa_altura), (w, h)], fill=(0, 0, 0, 150))
+    draw.text((12, h - faixa_altura + 8), linha1, font=fonte, fill=(255, 255, 255, 255))
+    draw.text((12, h - faixa_altura + 8 + faixa_altura // 2), linha2, font=fonte, fill=(255, 255, 255, 255))
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=88)
+    return buffer.getvalue()
+
+
+def upload_foto_cloudinary(foto_bytes: bytes, report_id: str) -> str | None:
+    """Envia a foto (já carimbada) para o Cloudinary e retorna a URL pública.
+    Retorna None se o Cloudinary não estiver configurado ou o upload falhar."""
+    if not CLOUDINARY_ATIVO:
+        return None
+    try:
+        resultado = cloudinary.uploader.upload(
+            io.BytesIO(foto_bytes),
+            folder="ecosentinela/reports",
+            public_id=report_id,
+            overwrite=True,
+            resource_type="image",
+        )
+        return resultado.get("secure_url")
+    except Exception as e:
+        st.warning(f"Não foi possível enviar a foto ao Cloudinary agora: {e}")
+        return None
+
+
+# =============================================================================
 # TELA 01 · MAPA
 # =============================================================================
 
@@ -308,7 +384,8 @@ def tela_mapa() -> None:
                 ).add_to(m)
         else:
             for _, row in df.iterrows():
-                oficial = row["protocolo"] is not None
+                oficial = pd.notna(row["protocolo"]) and str(row["protocolo"]).strip() != ""
+                protocolo_txt = f"Protocolo {row['protocolo']}" if oficial else "Sem protocolo ainda"
                 folium.CircleMarker(
                     location=[row["lat"], row["lon"]],
                     radius=7,
@@ -319,8 +396,7 @@ def tela_mapa() -> None:
                     fill_color=CATEGORIAS[row["categoria"]]["cor"],
                     fill_opacity=0.9,
                     popup=folium.Popup(
-                        f"<b>{row['titulo']}</b><br>Status: {row['status']}<br>"
-                        f"{'Protocolo ' + row['protocolo'] if oficial else 'Sem protocolo ainda'}",
+                        f"<b>{row['titulo']}</b><br>Status: {row['status']}<br>{protocolo_txt}",
                         max_width=220,
                     ),
                 ).add_to(m)
@@ -360,15 +436,36 @@ def tela_reportar() -> None:
     st.markdown("### 📸 Novo report")
     st.caption("POST /reports {foto, categoria, geo, texto, anônimo}")
 
+    if not CLOUDINARY_ATIVO:
+        st.warning(
+            "⚠️ Upload de fotos não está configurado — defina `CLOUDINARY_CLOUD_NAME`, "
+            "`CLOUDINARY_API_KEY` e `CLOUDINARY_API_SECRET` em **Secrets**. "
+            "O report ainda pode ser enviado, só a foto não será salva.",
+            icon="⚠️",
+        )
+
     col1, col2 = st.columns([1, 1.2])
 
     with col1:
         foto = st.camera_input("Toque para fotografar")
-        if foto is not None:
+
+        st.markdown("**📍 Localização do dispositivo**")
+        st.caption("Toque no ícone abaixo para capturar seu GPS real (o navegador vai pedir permissão).")
+        loc = streamlit_geolocation()
+        if loc and loc.get("latitude") is not None:
+            st.session_state.geo_detectado = (loc["latitude"], loc["longitude"])
+            st.session_state.geo_fonte = "GPS real do dispositivo"
+            precisao = loc.get("accuracy")
             st.markdown(
-                '<span class="es-badge es-badge-green">📍 Geolocalização e timestamp embutidos</span>',
+                '<span class="es-badge es-badge-green">📍 GPS capturado</span>',
                 unsafe_allow_html=True,
             )
+            st.caption(
+                f"{loc['latitude']:.5f}, {loc['longitude']:.5f}"
+                + (f" · precisão ≈ {precisao:.0f} m" if precisao else "")
+            )
+        else:
+            st.caption("Localização ainda não capturada — ajuste manualmente ao lado se preferir.")
 
     with col2:
         tipo_problema = st.selectbox(
@@ -391,19 +488,15 @@ def tela_reportar() -> None:
                 unsafe_allow_html=True,
             )
 
-        st.markdown("**📍 Local detectado**")
-        c_lat, c_lon, c_btn = st.columns([1, 1, 0.8])
+        st.markdown("**📍 Local do problema**")
+        st.caption("Pré-preenchido pelo GPS quando disponível — ajuste se o problema não estiver exatamente onde você está.")
+        c_lat, c_lon = st.columns(2)
         lat_atual, lon_atual = st.session_state.geo_detectado
         with c_lat:
             lat_in = st.number_input("Latitude", value=float(lat_atual), format="%.5f")
         with c_lon:
             lon_in = st.number_input("Longitude", value=float(lon_atual), format="%.5f")
-        with c_btn:
-            st.write("")
-            st.write("")
-            if st.button("🔄 Detectar"):
-                st.session_state.geo_detectado = _jitter(CIDADE_LAT, CIDADE_LON, 0.02)
-                st.rerun()
+        st.caption(f"Fonte da localização: {st.session_state.get('geo_fonte', 'Manual (mapa)')}")
 
         label_detalhes = (
             "Descreva o problema"
@@ -413,23 +506,38 @@ def tela_reportar() -> None:
         texto = st.text_area(label_detalhes, placeholder="Ex.: acumulado há dias, próximo ao ponto de ônibus…")
         anonimo = st.checkbox("🙈 Denúncia anônima", help="Protege o denunciante em casos sensíveis.")
 
-        enviar = st.button("ENVIAR REPORT", type="primary", use_container_width=True)
+        enviar = st.button("ENVIAR REPORT", type="primary", width='stretch')
 
         if enviar:
             if tipo_problema == "Outro problema (não listado)" and not texto.strip():
                 st.warning("Descreva o problema antes de enviar.")
             else:
                 descricao_final = texto.strip() if texto.strip() else tipo_problema
+                report_id = str(uuid.uuid4())[:8]
+                momento = datetime.now()
+
+                foto_url = None
+                if foto is not None:
+                    with st.spinner("Carimbando e enviando foto…"):
+                        foto_carimbada = carimbar_foto(foto.getvalue(), lat_in, lon_in, momento)
+                        foto_url = upload_foto_cloudinary(foto_carimbada, report_id)
+                    if foto_url:
+                        st.toast("📷 Foto anexada com sucesso.", icon="✅")
+                    elif CLOUDINARY_ATIVO:
+                        st.toast("⚠️ Falha ao enviar a foto — report será salvo sem ela.", icon="⚠️")
+
                 novo = {
-                    "id": str(uuid.uuid4())[:8],
+                    "id": report_id,
                     "titulo": f"{CATEGORIAS[categoria]['emoji']} {tipo_problema[:32]}",
                     "categoria": categoria,
                     "tipo_problema": tipo_problema,
                     "descricao": descricao_final,
                     "lat": lat_in,
                     "lon": lon_in,
+                    "geo_fonte": st.session_state.get("geo_fonte", "Manual (mapa)"),
+                    "foto_url": foto_url,
                     "anonimo": anonimo,
-                    "criado_em": datetime.now(),
+                    "criado_em": momento,
                     "status": "Reportado",
                     "confirmacoes": 0,
                     "protocolo": None,
@@ -590,7 +698,7 @@ def tela_painel_secretaria() -> None:
                 "equipe": st.column_config.SelectboxColumn("equipe", options=[None] + EQUIPES),
             },
             disabled=["id", "titulo", "categoria", "protocolo", "confirmacoes"],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             key="editor_protocolos",
         )
@@ -599,7 +707,7 @@ def tela_painel_secretaria() -> None:
                 r = get_report(row["id"])
                 if r:
                     r["status"] = row["status"]
-                    r["equipe"] = row["equipe"]
+                    r["equipe"] = row["equipe"] if pd.notna(row["equipe"]) else None
             st.success("Status atualizados. O cidadão verá a mudança refletida em tempo real.")
 
         geo = {
@@ -641,13 +749,13 @@ def tela_painel_secretaria() -> None:
                 plot_bgcolor=t["plot_bg"], paper_bgcolor=t["plot_bg"], font_color=t["text"],
                 showlegend=False,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         with col2:
             contagem_status = df["status"].value_counts().reindex(ESTAGIOS).fillna(0).reset_index()
             contagem_status.columns = ["status", "quantidade"]
             fig2 = px.pie(contagem_status, names="status", values="quantidade", title="Distribuição por estágio")
             fig2.update_layout(plot_bgcolor=t["plot_bg"], paper_bgcolor=t["plot_bg"], font_color=t["text"])
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width='stretch')
 
 
 # =============================================================================
@@ -695,7 +803,7 @@ def tela_perfil() -> None:
         for _, r in recentes.iterrows():
             icone = CATEGORIAS[r["categoria"]]["emoji"]
             linha = f"{icone} **{r['titulo']}** — status atual: *{r['status']}*"
-            if r["protocolo"]:
+            if pd.notna(r["protocolo"]) and str(r["protocolo"]).strip() != "":
                 linha += f" (protocolo {r['protocolo']})"
             st.markdown(f'<div class="es-card">{linha}<br>'
                         f'<span class="es-muted">{r["criado_em"].strftime("%d/%m/%Y")}</span></div>',
@@ -752,7 +860,7 @@ def main() -> None:
     sidebar()
 
     st.title("EcoSentinela")
-    st.caption('O "Sentinela ambiental da população": Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar '
+    st.caption('O "Sentinela ambiental da população": Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar  '
                "problemas ambientais locais — que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
 
