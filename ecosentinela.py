@@ -71,7 +71,7 @@ CIDADE_LON = -54.6892
 
 CATEGORIAS = {
     "Lixo": {"emoji": "🗑️", "cor": "#c8922f"},
-    "Desmate": {"emoji": "🌳", "cor": "#3b5d45"},
+    "Desmatamento": {"emoji": "🌳", "cor": "#3b5d45"},
     "Água": {"emoji": "💧", "cor": "#2f6690"},
 }
 
@@ -84,13 +84,13 @@ PROBLEMAS_AMBIENTAIS = {
     "Queima de lixo a céu aberto": "Lixo",
     "Descarte de lixo eletrônico": "Lixo",
     "Descarte de óleo ou produto químico no solo": "Lixo",
-    "Desmatamento": "Desmate",
-    "Queimada / incêndio florestal": "Desmate",
-    "Corte irregular de árvores": "Desmate",
-    "Extração ilegal de madeira": "Desmate",
-    "Ocupação em área de preservação permanente (APP)": "Desmate",
-    "Construção irregular em área protegida": "Desmate",
-    "Caça ou tráfico de animais silvestres": "Desmate",
+    "Desmatamento": "Desmatamento",
+    "Queimada / incêndio florestal": "Desmatamento",
+    "Corte irregular de árvores": "Desmatamento",
+    "Extração ilegal de madeira": "Desmatamento",
+    "Ocupação em área de preservação permanente (APP)": "Desmatamento",
+    "Construção irregular em área protegida": "Desmatamento",
+    "Caça ou tráfico de animais silvestres": "Desmatamento",
     "Poluição de rio, igarapé ou córrego": "Água",
     "Vazamento de esgoto a céu aberto": "Água",
     "Assoreamento de curso d'água": "Água",
