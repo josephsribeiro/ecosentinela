@@ -860,7 +860,7 @@ def main() -> None:
     sidebar()
 
     st.title("EcoSentinela")
-    st.caption('O "Sentinela ambiental da população": Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar  '
+    st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar  '
                "problemas ambientais locais — que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
 
