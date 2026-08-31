@@ -147,6 +147,15 @@ def inject_theme_css(mode: str) -> None:
             background-color: {t['bg']};
             color: {t['text']};
         }}
+                .stApp {{
+            background-color: {t['bg']};
+            color: {t['text']};
+        }}
+        div[data-testid="stDecoration"] {{
+            display: none;
+        }}
+        section[data-testid="stSidebar"] {{
+            ...
         section[data-testid="stSidebar"] {{
             background-color: {t['bg_secondary']};
             border-right: 1px solid {t['border']};
