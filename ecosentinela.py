@@ -2,7 +2,7 @@
 EcoSentinela — o "Sentinela ambiental da população"
 Protótipo funcional em Streamlit.
 
-Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer comunidade como aliados para reportar problemas ambientais locais, que podem virar
+Desenvolvido por doutorandos do PPGSND/UFOPA, vem para trazer comunidade como aliados para reportar problemas ambientais locais, que podem virar
 protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente.
 
 Como rodar:
