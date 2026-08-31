@@ -887,9 +887,7 @@ def main() -> None:
             st.image("assets/logo_ppgsnd.png", width=90)
         with col_titulo:
             st.markdown("<h1>EcoSentinela</h1>", unsafe_allow_html=True)
-        with col_logo2:
-            st.image("assets/logo_ufopa.png", width=90)
-        st.markdown('</div>', unsafe_allow_html=True)
+
 
     st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
                "vem para trazer a comunidade como aliados para reportar problemas ambientais locais — "
