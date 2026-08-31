@@ -147,11 +147,6 @@ def inject_theme_css(mode: str) -> None:
             background-color: {t['bg']};
             color: {t['text']};
         }}
-        div[data-testid="stDecoration"] {{
-            display: none;
-        }}
-        section[data-testid="stSidebar"] {{
-            ...
         section[data-testid="stSidebar"] {{
             background-color: {t['bg_secondary']};
             border-right: 1px solid {t['border']};
@@ -210,12 +205,6 @@ def inject_theme_css(mode: str) -> None:
         unsafe_allow_html=True,
     )
 
-def logo_seguro(caminho: str, largura: int) -> None:
-    """Exibe uma logo sem derrubar o app caso o arquivo esteja ausente ou corrompido."""
-    try:
-        st.image(caminho, width=largura)
-    except Exception:
-        st.empty()
 
 # =============================================================================
 # DADOS (estado em memória, simulando o backend do app)
@@ -870,41 +859,9 @@ def main() -> None:
     inject_theme_css(st.session_state.theme)
     sidebar()
 
-    # ---- Cabeçalho com as duas logos ----
-    st.markdown(
-        """
-        <style>
-        .es-header-banner {
-            background-color: #1f5c33;
-            border-radius: 10px;
-            padding: 1.2rem 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .es-header-banner h1 {
-            color: #ffffff !important;
-            text-align: center;
-            margin: 0;
-            font-size: 2.2rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with st.container():
-        st.markdown('<div class="es-header-banner">', unsafe_allow_html=True)
-        col_logo1, col_titulo, col_logo2 = st.columns([1, 4, 1])
-        with col_logo1:
-            logo_seguro("assets/logo_ppgsnd.png", 90)
-        with col_titulo:
-            st.markdown("<h1>EcoSentinela</h1>", unsafe_allow_html=True)
-        with col_logo2:
-            logo_seguro("assets/logo_ufopa.png", 90)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
-               "vem para trazer a comunidade como aliados para reportar problemas ambientais locais — "
-               "que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
+    st.title("EcoSentinela")
+    st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSND/UFOPA, vem para trazer a comunidade como aliados para reportar  '
+               "problemas ambientais locais — que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
 
     pagina = st.session_state.pagina
