@@ -12,11 +12,13 @@ Como rodar:
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 import random
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import cloudinary
 import cloudinary.uploader
@@ -105,6 +107,19 @@ ESTAGIOS = ["Reportado", "Validado", "Secretaria", "Em campo", "Resolvido"]
 LIMIAR_CONFIRMACOES = 30
 EQUIPES = ["Fiscalização Ambiental · Zona Norte", "Fiscalização Ambiental · Zona Sul",
            "Fiscalização Ambiental · Zona Leste", "Recursos Hídricos", "Manejo de Resíduos"]
+
+# =============================================================================
+# ASSETS — logo institucional (PPGSND/UFOPA) embutido como base64 para permitir
+# alinhamento por flexbox junto ao nome "EcoSentinela" no cabeçalho.
+# =============================================================================
+
+def _logo_base64(caminho: str) -> str | None:
+    """Lê um arquivo de imagem do disco e retorna como base64, ou None se
+    o arquivo não existir (evita quebrar o app se o caminho estiver errado)."""
+    p = Path(caminho)
+    if not p.exists():
+        return None
+    return base64.b64encode(p.read_bytes()).decode("utf-8")
 
 # =============================================================================
 # TEMA (DARK / LIGHT) — cores inspiradas na identidade visual do EcoSentinela
@@ -858,7 +873,7 @@ def main() -> None:
     init_state()
     inject_theme_css(st.session_state.theme)
     sidebar()
- 
+
     # ---- Cabeçalho: logo + nome alinhados lado a lado ----
     st.markdown(
         """
@@ -902,7 +917,7 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
- 
+
     logo_b64 = _logo_base64("assets/logo_ppgsnd.png")
     logo_html = (
         f'<span class="es-header-logo-chip">'
@@ -910,7 +925,7 @@ def main() -> None:
         if logo_b64
         else ""
     )
- 
+
     st.markdown(
         f"""
         <div class="es-header-banner">
@@ -922,19 +937,19 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
- 
+
     if logo_b64 is None:
         st.caption(
             "ℹ️ Logo não encontrada em `assets/logo_ppgsnd.png` — confira se o "
             "arquivo existe nesse caminho dentro do repositório."
         )
- 
- 
+
+
     st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
                "vem para trazer a comunidade como aliados para reportar problemas ambientais locais — "
                "que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
- 
+
     pagina = st.session_state.pagina
     if pagina == "Mapa":
         tela_mapa()
@@ -946,6 +961,7 @@ def main() -> None:
         tela_painel_secretaria()
     elif pagina == "Feed & Perfil":
         tela_perfil()
+
 
 if __name__ == "__main__":
     main()
