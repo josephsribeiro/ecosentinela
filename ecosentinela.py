@@ -858,42 +858,83 @@ def main() -> None:
     init_state()
     inject_theme_css(st.session_state.theme)
     sidebar()
-
-    # ---- Cabeçalho com as duas logos ----
+ 
+    # ---- Cabeçalho: logo + nome alinhados lado a lado ----
     st.markdown(
         """
         <style>
         .es-header-banner {
             background-color: #1f5c33;
             border-radius: 10px;
-            padding: 1.2rem 1.5rem;
+            padding: 1.1rem 1.6rem;
             margin-bottom: 1rem;
         }
-        .es-header-banner h1 {
+        .es-header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        /* Card claro por trás do logo: evita o efeito de "brilho"/borda dura
+           que aparece quando uma logo com fundo branco flutua direto sobre
+           o verde escuro do banner — aqui a moldura clara fica intencional. */
+        .es-header-logo-chip {
+            background-color: #f7f4ee;
+            border-radius: 10px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+        }
+        .es-header-logo-chip img {
+            height: 48px;
+            width: auto;
+            display: block;
+        }
+        .es-header-inner h1 {
             color: #ffffff !important;
-            text-align: left;
             margin: 0;
-            font-size: 2.2rem;
+            font-size: 2.1rem;
+            line-height: 1;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-    with st.container():
-        st.markdown('<div class="es-header-banner">', unsafe_allow_html=True)
-        col_logo1, col_titulo, col_logo2 = st.columns([1, 4, 1])
-        with col_logo1:
-            st.image("assets/logo_ppgsnd.png", width=90)
-        with col_titulo:
-            st.markdown("<h1>EcoSentinela</h1>", unsafe_allow_html=True)
-
-
+ 
+    logo_b64 = _logo_base64("assets/logo_ppgsnd.png")
+    logo_html = (
+        f'<span class="es-header-logo-chip">'
+        f'<img src="data:image/png;base64,{logo_b64}" alt="PPGSND/UFOPA"></span>'
+        if logo_b64
+        else ""
+    )
+ 
+    st.markdown(
+        f"""
+        <div class="es-header-banner">
+            <div class="es-header-inner">
+                {logo_html}
+                <h1>EcoSentinela</h1>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+ 
+    if logo_b64 is None:
+        st.caption(
+            "ℹ️ Logo não encontrada em `assets/logo_ppgsnd.png` — confira se o "
+            "arquivo existe nesse caminho dentro do repositório."
+        )
+ 
+ 
     st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
                "vem para trazer a comunidade como aliados para reportar problemas ambientais locais — "
                "que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
-
+ 
     pagina = st.session_state.pagina
     if pagina == "Mapa":
         tela_mapa()
@@ -905,7 +946,6 @@ def main() -> None:
         tela_painel_secretaria()
     elif pagina == "Feed & Perfil":
         tela_perfil()
-
 
 if __name__ == "__main__":
     main()
