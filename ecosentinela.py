@@ -205,6 +205,22 @@ def inject_theme_css(mode: str) -> None:
         unsafe_allow_html=True,
     )
 
+def inject_theme_css(mode: str) -> None:
+    t = THEMES[mode]
+    st.markdown(
+        f"""
+        ...
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def logo_seguro(caminho: str, largura: int) -> None:
+    """Exibe uma logo sem derrubar o app caso o arquivo esteja ausente ou corrompido."""
+    try:
+        st.image(caminho, width=largura)
+    except Exception:
+        st.empty()
 
 # =============================================================================
 # DADOS (estado em memória, simulando o backend do app)
@@ -884,11 +900,11 @@ def main() -> None:
         st.markdown('<div class="es-header-banner">', unsafe_allow_html=True)
         col_logo1, col_titulo, col_logo2 = st.columns([1, 4, 1])
         with col_logo1:
-            st.image("assets/logo_ppgsnd.png", width=90)
+            logo_seguro("assets/logo_ppgsnd.png", 90)
         with col_titulo:
             st.markdown("<h1>EcoSentinela</h1>", unsafe_allow_html=True)
         with col_logo2:
-            st.image("assets/logo_ufopa.png", width=90)
+            logo_seguro("assets/logo_ufopa.png", 90)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
