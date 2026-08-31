@@ -104,7 +104,7 @@ PROBLEMAS_AMBIENTAIS = {
 }
 
 ESTAGIOS = ["Reportado", "Validado", "Secretaria", "Em campo", "Resolvido"]
-LIMIAR_CONFIRMACOES = 30
+LIMIAR_CONFIRMACOES = 10
 EQUIPES = ["Fiscalização Ambiental · Zona Norte", "Fiscalização Ambiental · Zona Sul",
            "Fiscalização Ambiental · Zona Leste", "Recursos Hídricos", "Manejo de Resíduos"]
 
