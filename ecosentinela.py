@@ -205,16 +205,6 @@ def inject_theme_css(mode: str) -> None:
         unsafe_allow_html=True,
     )
 
-def inject_theme_css(mode: str) -> None:
-    t = THEMES[mode]
-    st.markdown(
-        f"""
-        ...
-        """,
-        unsafe_allow_html=True,
-    )
-
-
 def logo_seguro(caminho: str, largura: int) -> None:
     """Exibe uma logo sem derrubar o app caso o arquivo esteja ausente ou corrompido."""
     try:
