@@ -147,10 +147,6 @@ def inject_theme_css(mode: str) -> None:
             background-color: {t['bg']};
             color: {t['text']};
         }}
-                .stApp {{
-            background-color: {t['bg']};
-            color: {t['text']};
-        }}
         div[data-testid="stDecoration"] {{
             display: none;
         }}
