@@ -871,7 +871,7 @@ def main() -> None:
         }
         .es-header-banner h1 {
             color: #ffffff !important;
-            text-align: center;
+            text-align: left;
             margin: 0;
             font-size: 2.2rem;
         }
