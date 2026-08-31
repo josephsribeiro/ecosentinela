@@ -859,9 +859,41 @@ def main() -> None:
     inject_theme_css(st.session_state.theme)
     sidebar()
 
-    st.title("EcoSentinela")
-    st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, vem para trazer a comunidade como aliados para reportar  '
-               "problemas ambientais locais — que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
+    # ---- Cabeçalho com as duas logos ----
+    st.markdown(
+        """
+        <style>
+        .es-header-banner {
+            background-color: #1f5c33;
+            border-radius: 10px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .es-header-banner h1 {
+            color: #ffffff !important;
+            text-align: center;
+            margin: 0;
+            font-size: 2.2rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container():
+        st.markdown('<div class="es-header-banner">', unsafe_allow_html=True)
+        col_logo1, col_titulo, col_logo2 = st.columns([1, 4, 1])
+        with col_logo1:
+            st.image("assets/logo_ppgsnd.png", width=90)
+        with col_titulo:
+            st.markdown("<h1>EcoSentinela</h1>", unsafe_allow_html=True)
+        with col_logo2:
+            st.image("assets/logo_ufopa.png", width=90)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.caption('O "Sentinela ambiental da população" Desenvolvido por doutorandos do PPGSNF/UFOPA, '
+               "vem para trazer a comunidade como aliados para reportar problemas ambientais locais — "
+               "que podem virar protocolos oficiais acompanháveis junto à Secretaria de Meio Ambiente para agir sobre eles.")
     st.write("")
 
     pagina = st.session_state.pagina
